@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+__pycache__/*
+README.txt
+heroku_logs.txt
+archieve/*
+nb/*
+cache/*
