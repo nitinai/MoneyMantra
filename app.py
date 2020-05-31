@@ -8,7 +8,7 @@ from flask_caching import Cache
 from dash import Dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 #from dash_table.Format import Sign
 import dash_table.FormatTemplate as FormatTemplate
@@ -33,8 +33,40 @@ def last_update():
         update_date = f.read()
         return (f"""Last updated on {update_date} GMT+5:30""")
 
-
+df_ledger = pd.read_csv(f"{PATH}/Ledger.csv")
 ##########################################################################
+
+def create_datatable_world(id):
+
+    df = df_ledger
+
+    return DataTable(id=id,
+                    
+                    columns=[{"name": i, "id": i}
+                             for i in df.columns],
+                    editable=True,
+                    row_deletable=True,
+                    data=df.to_dict("rows"),
+                    row_selectable=False, #"single" if countryName != 'Schengen' else False,
+                    sort_action="native",
+                    style_as_list_view=True,
+                    style_cell={'font_family': 'Helvetica',
+                                'font_size': '1.1rem',
+                                'padding': '.1rem',
+                                'backgroundColor': '#ffffff', },
+                    fixed_rows={'headers': True, 'data': 0},
+                    style_table={'minHeight': '600px',
+                                 'height': '600px',
+                                 'maxHeight': '600px',
+                                 },
+                    style_header={'backgroundColor': '#ffffff',
+                                  'fontWeight': 'bold'},
+                    export_format='csv',
+                    #export_headers='display', # only supported for export_format: xlsx
+                    merge_duplicate_headers=True,
+                    
+                        )
+
 
 
 
@@ -119,15 +151,37 @@ app.layout = html.Div([
         ], className="banner"),
     ]),
 
+    # all_content
     html.Div([
         
         html.Div([
 
             html.Div([
-                html.P(children=last_update()), 
+                dcc.Tabs(
+                        id="tabs_world_table",
+                        value='My Ledger',
+                        parent_className='custom-tabs',
+                        className='custom-tabs-container',
+                        children=[
+                            dcc.Tab(
+                                    id='tab_world_table',
+                                    label='My Ledger',
+                                    value='My Ledger',
+                                    className='custom-tab',
+                                    selected_className='custom-tab--selected',
+                                    children=[
+                                    create_datatable_world(id="world_countries_table"), 
+                                    ]
+                                    ),
+                            
+                        ],
+                        #style = {"margin-left": "2rem","margin-right": "2rem"}
+                                ), 
             ], className="last_update"),
 
-            html.Hr(),
+            html.Button('Add Row', id='editing-rows-button', n_clicks=0),
+            html.Button('Save Data', id='save_table_button', n_clicks=0),
+            html.P(id="save_table_btn_msg")
         ], className="row"),
 
         html.Div([
@@ -138,7 +192,7 @@ app.layout = html.Div([
         html.Div([
             
             html.P(
-            children=["Developed by NITIN PATIL | If you have any feedback on this dashboard, please let him know on ", 
+            children=["Developed by NITIN PATIL | If you have any feedback on this app, please let him know on ", 
             html.A('Twitter', href='https://twitter.com/intent/tweet?source=webclient&text=%40_nitinp', target='_blank')
                     ]),
 
@@ -148,6 +202,32 @@ app.layout = html.Div([
 
 ])
 
+
+@app.callback(
+    Output('world_countries_table', 'data'),
+    [Input('editing-rows-button', 'n_clicks')],
+    [State('world_countries_table', 'data'),
+     State('world_countries_table', 'columns')])
+def add_row(n_clicks, rows, columns):
+    if n_clicks > 0:
+        rows.append({c['id']: '' for c in columns})
+    return rows
+
+@app.callback(
+    Output('save_table_btn_msg', 'children'),
+    [Input('save_table_button', 'n_clicks')],
+    [State('world_countries_table', 'data'),
+     State('world_countries_table', 'columns')])
+def add_row(n_clicks, data, columns):
+    msg=""
+    #print(type(data))
+    #print(len(data))
+    #msg = str(type(data))+ ' ' + str(len(data)) + " " + str(data[0])
+    if n_clicks > 0:
+        df = pd.DataFrame(data)
+        df.to_csv(f"{PATH}/Saved.csv")
+        msg="Data save successfully"
+    return msg
 
 if __name__ == '__main__':
     app.run_server(debug=True)
