@@ -225,7 +225,7 @@ def add_row(n_clicks, data, columns):
     #msg = str(type(data))+ ' ' + str(len(data)) + " " + str(data[0])
     if n_clicks > 0:
         df = pd.DataFrame(data)
-        df.to_csv(f"{PATH}/Saved.csv")
+        df.to_csv(f"{PATH}/Ledger.csv")
         msg="Data save successfully"
     return msg
 
